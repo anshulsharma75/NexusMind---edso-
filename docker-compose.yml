@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  ml_service:
+    build: ./ml_service
+    container_name: convai_ml_service
+    ports:
+      - "8001:8001"
+    networks:
+      - convai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  api_gateway:
+    build: ./api_gateway
+    container_name: convai_api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - ML_SERVICE_URL=http://ml_service:8001
+    depends_on:
+      ml_service:
+        condition: service_healthy
+    networks:
+      - convai_network
+    restart: unless-stopped
+
+networks:
+  convai_network:
+    driver: bridge
